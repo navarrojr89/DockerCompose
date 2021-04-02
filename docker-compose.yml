@@ -1,0 +1,112 @@
+version: '3.8'
+services:
+  lanm-config-server:
+    image: lanm-config-server:1.0.0
+    ports:
+      - "8888:8888"
+    restart: always
+    networks:
+      - MicroservicesTraining
+  lanm-eureka-server:
+    image: lanm-eureka-server:1.0.0
+    ports:
+      - "8761:8761"
+    restart: always
+    networks:
+      - MicroservicesTraining
+  lanm-mysql:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    restart: always
+    networks:
+      - MicroservicesTraining
+    environment:
+      MYSQL_DATABASE: db_springboot_cloud
+      MYSQL_ROOT_PASSWORD: rootroot
+  lanm-postgres:
+    image: postgres:13-alpine
+    ports:
+      - "5432:5432"
+    restart: always
+    networks:
+      - MicroservicesTraining
+    environment:
+      POSTGRES_DB: db_springboot_cloud
+      POSTGRES_PASSWORD: postgres
+  lanm-service-products:
+    image: lanm-service-products:1.0.0
+    restart: always
+    networks:
+      - MicroservicesTraining
+    depends_on:
+      - lanm-config-server
+      - lanm-eureka-server
+      - lanm-mysql
+  lanm-service-items:
+    image: lanm-service-items:1.0.0
+    restart: always
+    networks:
+      - MicroservicesTraining
+    depends_on:
+      - lanm-config-server
+      - lanm-eureka-server
+      - lanm-service-products
+  lanm-service-users:
+    image: lanm-service-users:1.0.0
+    restart: always
+    networks:
+      - MicroservicesTraining
+    depends_on:
+      - lanm-config-server
+      - lanm-eureka-server
+      - lanm-postgres
+  lanm-service-oauth:
+    image: lanm-service-oauth:1.0.0
+    ports:
+      - "9100:9100"
+    restart: always
+    networks:
+      - MicroservicesTraining
+    depends_on:
+      - lanm-config-server
+      - lanm-eureka-server
+      - lanm-service-users
+  lanm-zuul-gateway:
+    image: lanm-zuul-gateway:1.0.0
+    ports:
+      - "8090:8090"
+    restart: always
+    networks:
+      - MicroservicesTraining
+    depends_on:
+      - lanm-config-server
+      - lanm-eureka-server
+      - lanm-service-products
+      - lanm-service-items
+  lanm-rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    restart: always
+    networks:
+      - MicroservicesTraining
+  lanm-zipkin-server:
+    image: lanm-zipkin-server:1.0.0
+    ports:
+      - "9411:9411"
+    restart: always
+    networks:
+      - MicroservicesTraining
+    depends_on:
+      - lanm-rabbitmq
+      - lanm-mysql
+    environment:
+      RABBIT_ADDRESSES: lanm-rabbitmq:5672
+      STORAGE_TYPE: mysql
+      MYSQL_USER: zipkin
+      MYSQL_PASS: zipkin
+      MYSQL_HOST: lanm-mysql
+networks:
+  MicroservicesTraining:
